@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appserver
+  template:
+    metadata:
+      labels:
+        app: appserver
+    spec:
+      containers:
+      - name: appserver
+        image: opeseen/bkappimage
+        command: ["java"]
+        args: ["-jar", "banking-v1.jar", "reg"]
+        ports:
+        - containerPort: 8080
+          name: appserver-port
+      initContainers:
+      - name: init-mysqldb
+        image: busybox:1.28
+        command: ['sh', '-c', "until nslookup dbserver.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for dbserver; sleep 2; done"]
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appserver-svc
+spec:
+  selector:
+    app: appserver
+  type: LoadBalancer
+  ports:
+  - port: 8080
+    targetPort: appserver-port
+    protocol: TCP
