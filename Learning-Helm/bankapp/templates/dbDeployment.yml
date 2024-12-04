@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dbserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dbserver
+  template:
+    metadata:
+      labels:
+        app: dbserver
+    spec:
+      containers:
+      - name: dbserver    # The container name must match the name on the java application backend "applicaton.properties file"
+        image: mysql:8.0.39
+        ports:
+        - containerPort: 3306
+          name: dbserver-port
+        env:
+        - name: MYSQL_ROOT_PASSWORD   # Get the root user password for the database from the secret object
+          valueFrom:
+            secretKeyRef:
+              key: dbRootPasswd
+              name: dbsecret
+        - name: MYSQL_PASSWORD    # Get the other user password for the database from the secret object
+          valueFrom:
+            secretKeyRef:
+              key: dbUserPasswd
+              name: dbsecret
+        - name: MYSQL_DATABASE    # Create a database on initialization and get the name of the db from the configMap
+          valueFrom:
+            configMapKeyRef:
+              key: dbname
+              name: backend-cm
+        - name: MYSQL_USER    # Create a user for the database on db initialization and get the name of the user from the configMap
+          valueFrom:
+            configMapKeyRef:
+              key: dbuser
+              name: backend-cm
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbserver
+spec:
+  selector:
+    app: dbserver
+  type: ClusterIP
+  ports:
+  - port: 3306
+    targetPort: dbserver-port
+    protocol: TCP
