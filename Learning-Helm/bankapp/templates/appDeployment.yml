@@ -35,6 +35,6 @@ spec:
     app: appserver
   type: LoadBalancer
   ports:
-  - port: 8080
+  - port: 80
     targetPort: appserver-port
     protocol: TCP
